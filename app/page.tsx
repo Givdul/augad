@@ -1,5 +1,4 @@
 "use client";
-import WebXRAd from "@/pages/ar";
 
 export default function Home() {
   return (
