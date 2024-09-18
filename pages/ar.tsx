@@ -18,18 +18,41 @@ const WebXRAd: React.FC = () => {
             containerRef.current.appendChild(renderer.domElement);
         } // Attach renderer to div
 
-        // Create a basic plane with image texture for the ad
-        const geometry = new THREE.PlaneGeometry(1, 1); // Plane for displaying an image or video
-        const textureLoader = new THREE.TextureLoader();
+        // Create a video element to stream the camera feed
+        const video = document.createElement('video');
+        video.style.display = 'none';
+        document.body.appendChild(video);
 
-        // Replace 'your-image-url' with the actual image, GIF, or video texture URL
-        textureLoader.load('/assets/tonsplakat.jpg', (texture) => {
-            const material = new THREE.MeshBasicMaterial({ map: texture });
-            const plane = new THREE.Mesh(geometry, material);
-            scene.add(plane); // Add the plane to the scene
-        });
+        // Request camera access and start the video
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+                video.play();
 
-        camera.position.z = 2;
+                video.onloadedmetadata = () => {
+                    // Create a texture from the video
+                    const videoTexture = new THREE.VideoTexture(video);
+
+                    // Create a plane to display the video feed
+                    const videoMaterial = new THREE.MeshBasicMaterial({ map: videoTexture });
+                    const videoGeometry = new THREE.PlaneGeometry(2, 2);
+                    const videoMesh = new THREE.Mesh(videoGeometry, videoMaterial);
+
+                    // Position the videoMesh in front of the camera
+                    videoMesh.position.set(0, 0, -1);
+
+                    scene.add(videoMesh);
+                };
+            });
+
+        // Create a texture from the video
+        const videoTexture = new THREE.VideoTexture(video);
+
+        // Create a plane to display the video feed
+        const videoMaterial = new THREE.MeshBasicMaterial({ map: videoTexture });
+        const videoGeometry = new THREE.PlaneGeometry(2, 2);
+        const videoMesh = new THREE.Mesh(videoGeometry, videoMaterial);
+        scene.add(videoMesh);
 
         // WebXR's animation loop
         const animate = () => {
@@ -47,6 +70,7 @@ const WebXRAd: React.FC = () => {
                     containerRef.current.removeChild(renderer.domElement);
                 }
             }
+            document.body.removeChild(video);
         };
     }, []);
 
