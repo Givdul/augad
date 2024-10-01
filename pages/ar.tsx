@@ -1,5 +1,6 @@
 import Head from 'next/head';
-import {useEffect} from "react";
+import Script from 'next/script';
+import { useEffect } from 'react';
 
 const ARPage: React.FC = () => {
     useEffect(() => {
@@ -9,8 +10,12 @@ const ARPage: React.FC = () => {
     return (
         <>
             <Head>
-                <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+                <title>AR Page</title>
             </Head>
+            <Script
+                src="https://aframe.io/releases/1.6.0/aframe.min.js"
+                strategy="beforeInteractive"
+            />
             <a-scene className="w-full h-full">
                 <a-box position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
                 <a-sphere position="0 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
