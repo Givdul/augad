@@ -1,80 +1,20 @@
-import { useEffect, useRef } from 'react';
-import * as THREE from 'three';
+import React, { useEffect } from 'react';
+import 'aframe';
+import 'mind-ar/dist/mindar-image-aframe.prod.js';
 
-const WebXRAd: React.FC = () => {
-    const containerRef = useRef<HTMLDivElement | null>(null);
-
+const ARPage: React.FC = () => {
     useEffect(() => {
-        if (!containerRef.current) return;
-
-        // Setup scene
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 10);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.xr.enabled = true; // Enable WebXR
-        if ("appendChild" in containerRef.current) {
-            containerRef.current.appendChild(renderer.domElement);
-        } // Attach renderer to div
-
-        // Create a video element to stream the camera feed
-        const video = document.createElement('video');
-        video.style.display = 'none';
-        document.body.appendChild(video);
-
-        // Request camera access and start the video
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => {
-                video.srcObject = stream;
-                video.play();
-
-                video.onloadedmetadata = () => {
-                    // Create a texture from the video
-                    const videoTexture = new THREE.VideoTexture(video);
-
-                    // Create a plane to display the video feed
-                    const videoMaterial = new THREE.MeshBasicMaterial({ map: videoTexture });
-                    const videoGeometry = new THREE.PlaneGeometry(2, 2);
-                    const videoMesh = new THREE.Mesh(videoGeometry, videoMaterial);
-
-                    // Position the videoMesh in front of the camera
-                    videoMesh.position.set(0, 0, -1);
-
-                    scene.add(videoMesh);
-                };
-            });
-
-        // Create a texture from the video
-        const videoTexture = new THREE.VideoTexture(video);
-
-        // Create a plane to display the video feed
-        const videoMaterial = new THREE.MeshBasicMaterial({ map: videoTexture });
-        const videoGeometry = new THREE.PlaneGeometry(2, 2);
-        const videoMesh = new THREE.Mesh(videoGeometry, videoMaterial);
-        scene.add(videoMesh);
-
-        // WebXR's animation loop
-        const animate = () => {
-            renderer.setAnimationLoop(() => {
-                renderer.render(scene, camera);
-            });
-        };
-
-        renderer.setAnimationLoop(animate);
-
-        // Clean up on unmount
-        return () => {
-            if (containerRef.current) {
-                if ("removeChild" in containerRef.current) {
-                    containerRef.current.removeChild(renderer.domElement);
-                }
-            }
-            document.body.removeChild(video);
-        };
+        // Any additional setup can go here
     }, []);
 
-    return <div ref={containerRef}></div>;
+    return (
+        <a-scene mindar-image="imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.1.5/examples/image-tracking/assets/card-example/card.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+            <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+            <a-entity mindar-image-target="targetIndex: 0">
+                <a-plane color="blue" opaciy="0.5" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
+            </a-entity>
+        </a-scene>
+    );
 };
 
-export default WebXRAd;
+export default ARPage;
