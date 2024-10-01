@@ -15,10 +15,9 @@ const ARPage: React.FC = () => {
                 strategy="beforeInteractive"
             />
             <a-scene>
-                {/* Conditionally render the box based on markerFound state */}
-                        <a-box position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
-                        {/* ... other 3D content (optional) */}
-                <a-marker preset="hiro"></a-marker>
+                <a-marker type="pattern" url="./hiro-pattern.patt">
+                    <a-entity geometry="primitive: box" material="color: blue"></a-entity>
+                </a-marker>
             </a-scene>
         </>
     );
