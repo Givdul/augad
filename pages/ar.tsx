@@ -2,7 +2,7 @@
 
 import Head from 'next/head';
 import Script from 'next/script';
-import { useEffect } from 'react';
+import {useEffect} from 'react';
 
 const ARPage: React.FC = () => {
     useEffect(() => {
@@ -14,6 +14,8 @@ const ARPage: React.FC = () => {
             <Head>
                 <title>AR Page</title>
             </Head>
+            <Script src="https://jeromeetienne.github.io/AR.js/aframe/build/aframe-ar.js"
+                    strategy="beforeInteractive"></Script>
             <Script
                 src="https://aframe.io/releases/1.6.0/aframe.min.js"
                 strategy="beforeInteractive"
