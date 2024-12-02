@@ -66,10 +66,10 @@ const WebXRAd: React.FC = () => {
             scene.add(markerGroup);
 
 // Create marker
-            const _markerControls = new ArMarkerControls(arToolkitContext, markerGroup, {
+            new ArMarkerControls(arToolkitContext, markerGroup, {
                 type: 'pattern',
                 patternUrl: 'https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/data/patt.hiro',
-                changeMatrixMode: 'modelViewMatrix'  // Changed this line
+                changeMatrixMode: 'modelViewMatrix'
             });
 
 // Add cube to the marker group instead of scene directly
