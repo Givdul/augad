@@ -1,80 +1,124 @@
-import { useEffect, useRef } from 'react';
+import {useEffect, useRef} from 'react';
 import * as THREE from 'three';
+import dynamic from 'next/dynamic';
 
 const WebXRAd: React.FC = () => {
     const containerRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
-        if (!containerRef.current) return;
+        // Dynamically import AR.js only on client side
+        const initAR = async () => {
+            const { ArToolkitSource, ArToolkitContext, ArMarkerControls } = await import('@ar-js-org/ar.js/three.js/build/ar-threex.js');
 
-        // Setup scene
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 10);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+            if (!containerRef.current) return;
 
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.xr.enabled = true; // Enable WebXR
-        if ("appendChild" in containerRef.current) {
-            containerRef.current.appendChild(renderer.domElement);
-        } // Attach renderer to div
-
-        // Create a video element to stream the camera feed
-        const video = document.createElement('video');
-        video.style.display = 'none';
-        document.body.appendChild(video);
-
-        // Request camera access and start the video
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => {
-                video.srcObject = stream;
-                video.play();
-
-                video.onloadedmetadata = () => {
-                    // Create a texture from the video
-                    const videoTexture = new THREE.VideoTexture(video);
-
-                    // Create a plane to display the video feed
-                    const videoMaterial = new THREE.MeshBasicMaterial({ map: videoTexture });
-                    const videoGeometry = new THREE.PlaneGeometry(2, 2);
-                    const videoMesh = new THREE.Mesh(videoGeometry, videoMaterial);
-
-                    // Position the videoMesh in front of the camera
-                    videoMesh.position.set(0, 0, -1);
-
-                    scene.add(videoMesh);
-                };
+            // Setup scene
+            const scene = new THREE.Scene();
+            const camera = new THREE.Camera();
+            const renderer = new THREE.WebGLRenderer({
+                antialias: true,
+                alpha: true // important for AR
             });
 
-        // Create a texture from the video
-        const videoTexture = new THREE.VideoTexture(video);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            if ("appendChild" in containerRef.current) {
+                containerRef.current.appendChild(renderer.domElement);
+            }
 
-        // Create a plane to display the video feed
-        const videoMaterial = new THREE.MeshBasicMaterial({ map: videoTexture });
-        const videoGeometry = new THREE.PlaneGeometry(2, 2);
-        const videoMesh = new THREE.Mesh(videoGeometry, videoMaterial);
-        scene.add(videoMesh);
-
-        // WebXR's animation loop
-        const animate = () => {
-            renderer.setAnimationLoop(() => {
-                renderer.render(scene, camera);
+            // Setup AR source (webcam)
+            const arToolkitSource = new ArToolkitSource({
+                sourceType: 'webcam',
             });
-        };
 
-        renderer.setAnimationLoop(animate);
+            // Handle resize
+            arToolkitSource.init(() => {
+                setTimeout(() => {
+                    onResize();
+                }, 2000);
+            });
 
-        // Clean up on unmount
-        return () => {
-            if (containerRef.current) {
-                if ("removeChild" in containerRef.current) {
-                    containerRef.current.removeChild(renderer.domElement);
+            window.addEventListener('resize', onResize);
+
+            function onResize() {
+                arToolkitSource.onResizeElement();
+                arToolkitSource.copyElementSizeTo(renderer.domElement);
+                if (arToolkitContext.arController !== null) {
+                    arToolkitSource.copyElementSizeTo(arToolkitContext.arController.canvas);
                 }
             }
-            document.body.removeChild(video);
+
+// Setup AR context
+            const arToolkitContext = new ArToolkitContext({
+                cameraParametersUrl: 'https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/data/camera_para.dat',
+                detectionMode: 'mono',
+                maxDetectionRate: 30,
+                canvasWidth: 80*3,
+                canvasHeight: 60*3,
+            });
+
+// Initialize context first
+            arToolkitContext.init(() => {
+                camera.projectionMatrix.copy(arToolkitContext.getProjectionMatrix());
+            });
+
+// Create a group to hold the cube
+            const markerGroup = new THREE.Group();
+            scene.add(markerGroup);
+
+// Create marker
+            const markerControls = new ArMarkerControls(arToolkitContext, markerGroup, {
+                type: 'pattern',
+                patternUrl: 'https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/data/patt.hiro',
+                changeMatrixMode: 'modelViewMatrix'  // Changed this line
+            });
+
+// Add cube to the marker group instead of scene directly
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            const material = new THREE.MeshNormalMaterial({
+                transparent: true,
+                opacity: 0.5,
+                side: THREE.DoubleSide
+            });
+            const cube = new THREE.Mesh(geometry, material);
+            cube.position.y = 0.5;
+            markerGroup.add(cube);  // Add to markerGroup instead of scene
+
+// Animation loop
+            const animate = () => {
+                requestAnimationFrame(animate);
+
+                if (arToolkitSource.ready !== false) {
+                    arToolkitContext.update(arToolkitSource.domElement);
+                    scene.visible = camera.visible;
+                }
+
+                // Rotate cube
+                cube.rotation.x += 0.01;
+                cube.rotation.y += 0.01;
+
+                renderer.render(scene, camera);
+            };
+
+            animate();
+
+            // Clean up
+            return () => {
+                window.removeEventListener('resize', onResize);
+                if (containerRef.current) {
+                    if ("removeChild" in containerRef.current) {
+                        containerRef.current.removeChild(renderer.domElement);
+                    }
+                }
+            };
         };
+
+        initAR();
     }, []);
 
     return <div ref={containerRef}></div>;
 };
 
-export default WebXRAd;
+// Export with dynamic import and SSR disabled
+export default dynamic(() => Promise.resolve(WebXRAd), {
+    ssr: false
+});
