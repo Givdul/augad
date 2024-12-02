@@ -66,7 +66,7 @@ const WebXRAd: React.FC = () => {
             scene.add(markerGroup);
 
 // Create marker
-            const markerControls = new ArMarkerControls(arToolkitContext, markerGroup, {
+            const _markerControls = new ArMarkerControls(arToolkitContext, markerGroup, {
                 type: 'pattern',
                 patternUrl: 'https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/data/patt.hiro',
                 changeMatrixMode: 'modelViewMatrix'  // Changed this line
